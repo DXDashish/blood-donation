@@ -1,7 +1,4 @@
-package bd;
-
-
-
+package blooddonation;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
