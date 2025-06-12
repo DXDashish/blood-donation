@@ -1,298 +1,284 @@
-package blooddonation;
+package bd;
+
+
 
 import javax.swing.*;
-import javax.swing.table.*;
 import java.awt.*;
 import java.awt.event.*;
-import java.sql.*;
 
-public class BloodDonationGUI extends JFrame {
-    private Connection conn;
-    private JTabbedPane tabs;
-
-    public BloodDonationGUI() {
-        setTitle("Blood Donation Tracking System");
-        setSize(700, 500);
-        setDefaultCloseOperation(EXIT_ON_CLOSE);
-        setLocationRelativeTo(null);
-        setLayout(new BorderLayout());
-
-        connectDatabase();
-        login();
+public class Main {
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> new LoginFrame());
     }
+}
 
-    private void connectDatabase() {
-        try {
-            Class.forName("com.mysql.cj.jdbc.Driver");
-            conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/blood_donation", "root", "");
-        } catch (Exception e) {
-            e.printStackTrace();
-            JOptionPane.showMessageDialog(this, "Database connection failed: " + e.getMessage());
-        }
+class LoginFrame extends JFrame {
+    private JTextField usernameField;
+    private JPasswordField passwordField;
+    private JButton loginButton;
+    private JComboBox<String> roleComboBox;
+
+    public LoginFrame() {
+        setTitle("Blood Donation System - Login");
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setSize(350, 200);
+        setLocationRelativeTo(null);
+        setLayout(new GridBagLayout());
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5,5,5,5);
+
+        // Role selector
+        JLabel roleLabel = new JLabel("Select Role:");
+        gbc.gridx = 0; gbc.gridy = 0;
+        add(roleLabel, gbc);
+
+        roleComboBox = new JComboBox<>(new String[]{"Admin", "User", "Donor"});
+        gbc.gridx = 1;
+        add(roleComboBox, gbc);
+
+        // Username
+        JLabel usernameLabel = new JLabel("Username:");
+        gbc.gridx = 0; gbc.gridy = 1;
+        add(usernameLabel, gbc);
+
+        usernameField = new JTextField(15);
+        gbc.gridx = 1;
+        add(usernameField, gbc);
+
+        // Password
+        JLabel passwordLabel = new JLabel("Password:");
+        gbc.gridx = 0; gbc.gridy = 2;
+        add(passwordLabel, gbc);
+
+        passwordField = new JPasswordField(15);
+        gbc.gridx = 1;
+        add(passwordField, gbc);
+
+        // Login button
+        loginButton = new JButton("Login");
+        gbc.gridx = 0; gbc.gridy = 3; gbc.gridwidth = 2;
+        add(loginButton, gbc);
+
+        loginButton.addActionListener(e -> login());
+
+        setVisible(true);
     }
 
     private void login() {
-        JTextField userField = new JTextField();
-        JPasswordField passField = new JPasswordField();
-        Object[] fields = {
-            "Username:", userField,
-            "Password:", passField
-        };
+        String role = (String) roleComboBox.getSelectedItem();
+        String username = usernameField.getText();
+        String password = new String(passwordField.getPassword());
 
-        int option = JOptionPane.showConfirmDialog(null, fields, "Login", JOptionPane.OK_CANCEL_OPTION);
-        if (option == JOptionPane.OK_OPTION) {
-            String username = userField.getText();
-            String password = new String(passField.getPassword());
-
-            try {
-                PreparedStatement stmt = conn.prepareStatement("SELECT * FROM users WHERE username = ? AND password = ?");
-                stmt.setString(1, username);
-                stmt.setString(2, password);
-                ResultSet rs = stmt.executeQuery();
-
-                if (rs.next()) {
-                    initializeTabs();
-                } else {
-                    JOptionPane.showMessageDialog(this, "Invalid credentials.");
-                    System.exit(0);
-                }
-            } catch (Exception e) {
-                JOptionPane.showMessageDialog(this, "Login failed: " + e.getMessage());
-                System.exit(0);
+        if(role.equals("Admin")) {
+            if(username.equals("admin") && password.equals("admin123")) {
+                JOptionPane.showMessageDialog(this, "Admin Login Successful");
+                new AdminDashboard();
+                dispose();
+            } else {
+                JOptionPane.showMessageDialog(this, "Invalid Admin credentials!");
             }
-        } else {
-            System.exit(0);
+        } else if(role.equals("User")) {
+            if(!username.isEmpty() && !password.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "User Login Successful");
+                new UserDashboard();
+                dispose();
+            } else {
+                JOptionPane.showMessageDialog(this, "Invalid User credentials!");
+            }
+        } else if(role.equals("Donor")) {
+            if(!username.isEmpty() && !password.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Donor Login Successful");
+                new DonorDashboard();
+                dispose();
+            } else {
+                JOptionPane.showMessageDialog(this, "Invalid Donor credentials!");
+            }
         }
-    }
-    private void initializeTabs() {
-        tabs = new JTabbedPane();
-
-        tabs.add("Add Donor", getAddDonorPanel());
-        tabs.add("View Donors", getViewDonorsPanel());
-        tabs.add("Add Donation", getAddDonationPanel());
-        tabs.add("View Donations", getViewDonationsPanel());
-        tabs.add("View Stock", getViewStockPanel());
-        tabs.add("Low Stock Alert", getLowStockAlertPanel());
-
-        tabs.addChangeListener(e -> {
-            int index = tabs.getSelectedIndex();
-            String title = tabs.getTitleAt(index);
-            switch (title) {
-                case "View Donors" -> tabs.setComponentAt(index, getViewDonorsPanel());
-                case "View Donations" -> tabs.setComponentAt(index, getViewDonationsPanel());
-                case "View Stock" -> tabs.setComponentAt(index, getViewStockPanel());
-                case "Low Stock Alert" -> tabs.setComponentAt(index, getLowStockAlertPanel());
-            }
-        });
-
-        add(tabs, BorderLayout.CENTER);
-    }
-
-    private JPanel getAddDonorPanel() {
-        JPanel panel = new JPanel(null);
-        JLabel nameL = new JLabel("Name:");
-        JLabel bloodL = new JLabel("Blood Group:");
-        JLabel ageL = new JLabel("Age:");
-        JLabel contactL = new JLabel("Contact:");
-
-        JTextField nameF = new JTextField();
-        JComboBox<String> bloodF = new JComboBox<>(new String[]{"A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"});
-        JTextField ageF = new JTextField();
-        JTextField contactF = new JTextField();
-
-        JButton addBtn = new JButton("Add Donor");
-
-        nameL.setBounds(50, 30, 100, 25); nameF.setBounds(160, 30, 200, 25);
-        bloodL.setBounds(50, 70, 100, 25); bloodF.setBounds(160, 70, 200, 25);
-        ageL.setBounds(50, 110, 100, 25); ageF.setBounds(160, 110, 200, 25);
-        contactL.setBounds(50, 150, 100, 25); contactF.setBounds(160, 150, 200, 25);
-        addBtn.setBounds(160, 200, 150, 30);
-
-        panel.add(nameL); panel.add(nameF);
-        panel.add(bloodL); panel.add(bloodF);
-        panel.add(ageL); panel.add(ageF);
-        panel.add(contactL); panel.add(contactF);
-        panel.add(addBtn);
-
-        addBtn.addActionListener(e -> {
-            if (nameF.getText().isEmpty() || ageF.getText().isEmpty() || contactF.getText().isEmpty()) {
-                JOptionPane.showMessageDialog(panel, "Please fill all fields.");
-                return;
-            }
-            try {
-                PreparedStatement stmt = conn.prepareStatement("INSERT INTO donors (name, blood_group, age, contact) VALUES (?, ?, ?, ?)");
-                stmt.setString(1, nameF.getText());
-                stmt.setString(2, (String) bloodF.getSelectedItem());
-                stmt.setInt(3, Integer.parseInt(ageF.getText()));
-                stmt.setString(4, contactF.getText());
-                stmt.executeUpdate();
-                JOptionPane.showMessageDialog(panel, "Donor added successfully!");
-                nameF.setText(""); ageF.setText(""); contactF.setText("");
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(panel, "Error: " + ex.getMessage());
-            }
-        });
-
-        return panel;
-    }
-
-    private JPanel getViewDonorsPanel() {
-        JPanel panel = new JPanel(new BorderLayout());
-        String[] cols = {"ID", "Name", "Blood Group", "Age", "Contact"};
-        DefaultTableModel model = new DefaultTableModel(cols, 0);
-        JTable table = new JTable(model);
-        JScrollPane scrollPane = new JScrollPane(table);
-        panel.add(scrollPane);
-
-        try {
-            Statement stmt = conn.createStatement();
-            ResultSet rs = stmt.executeQuery("SELECT * FROM donors");
-            while (rs.next()) {
-                model.addRow(new Object[] {
-                    rs.getInt("id"), rs.getString("name"), rs.getString("blood_group"),
-                    rs.getInt("age"), rs.getString("contact")
-                });
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            JOptionPane.showMessageDialog(this, "Database error: " + e.getMessage());
-        }
-
-        return panel;
-    }
-
-    private JPanel getAddDonationPanel() {
-        JPanel panel = new JPanel(null);
-        JLabel idL = new JLabel("Donor ID:");
-        JLabel dateL = new JLabel("Date (YYYY-MM-DD):");
-        JLabel qtyL = new JLabel("Quantity (ml):");
-
-        JTextField idF = new JTextField();
-        JTextField dateF = new JTextField();
-        JTextField qtyF = new JTextField();
-
-        JButton addBtn = new JButton("Add Donation");
-
-        idL.setBounds(50, 30, 150, 25); idF.setBounds(200, 30, 200, 25);
-        dateL.setBounds(50, 70, 150, 25); dateF.setBounds(200, 70, 200, 25);
-        qtyL.setBounds(50, 110, 150, 25); qtyF.setBounds(200, 110, 200, 25);
-        addBtn.setBounds(200, 160, 150, 30);
-
-        panel.add(idL); panel.add(idF);
-        panel.add(dateL); panel.add(dateF);
-        panel.add(qtyL); panel.add(qtyF);
-        panel.add(addBtn);
-
-        addBtn.addActionListener(e -> {
-            try {
-                int donorId = Integer.parseInt(idF.getText());
-                String date = dateF.getText();
-                int qty = Integer.parseInt(qtyF.getText());
-
-                PreparedStatement stmt = conn.prepareStatement("INSERT INTO donations (donor_id, date, quantity) VALUES (?, ?, ?)");
-                stmt.setInt(1, donorId);
-                stmt.setString(2, date);
-                stmt.setInt(3, qty);
-                stmt.executeUpdate();
-
-                String bloodGroup = getDonorBloodGroup(donorId);
-                if (bloodGroup != null) {
-                    PreparedStatement update = conn.prepareStatement("UPDATE blood_stock SET quantity = quantity + ? WHERE blood_group = ?");
-                    update.setInt(1, qty);
-                    update.setString(2, bloodGroup);
-                    update.executeUpdate();
-                }
-
-                JOptionPane.showMessageDialog(panel, "Donation added.");
-            } catch (Exception ex) {
-                ex.printStackTrace();
-                JOptionPane.showMessageDialog(panel, "Error: " + ex.getMessage());
-            }
-        });
-
-        return panel;
-    }
-
-    private String getDonorBloodGroup(int donorId) throws SQLException {
-        PreparedStatement stmt = conn.prepareStatement("SELECT blood_group FROM donors WHERE id = ?");
-        stmt.setInt(1, donorId);
-        ResultSet rs = stmt.executeQuery();
-        return rs.next() ? rs.getString("blood_group") : null;
-    }
-
-    private JPanel getViewDonationsPanel() {
-        JPanel panel = new JPanel(new BorderLayout());
-        String[] cols = {"Donation ID", "Donor ID", "Date", "Quantity"};
-        DefaultTableModel model = new DefaultTableModel(cols, 0);
-        JTable table = new JTable(model);
-        panel.add(new JScrollPane(table));
-
-        try {
-            Statement stmt = conn.createStatement();
-            ResultSet rs = stmt.executeQuery("SELECT * FROM donations");
-            while (rs.next()) {
-                model.addRow(new Object[] {
-                    rs.getInt("id"), rs.getInt("donor_id"),
-                    rs.getString("date"), rs.getInt("quantity")
-                });
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            JOptionPane.showMessageDialog(this, "Error: " + e.getMessage());
-        }
-
-        return panel;
-    }
-
-    private JPanel getViewStockPanel() {
-        JPanel panel = new JPanel(new BorderLayout());
-        String[] cols = {"Blood Group", "Quantity"};
-        DefaultTableModel model = new DefaultTableModel(cols, 0);
-        JTable table = new JTable(model);
-        panel.add(new JScrollPane(table));
-
-        try {
-            Statement stmt = conn.createStatement();
-            ResultSet rs = stmt.executeQuery("SELECT * FROM blood_stock");
-            while (rs.next()) {
-                model.addRow(new Object[] {
-                    rs.getString("blood_group"), rs.getInt("quantity")
-                });
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            JOptionPane.showMessageDialog(this, "Error: " + e.getMessage());
-        }
-
-        return panel;
-    }
-
-    private JPanel getLowStockAlertPanel() {
-        JPanel panel = new JPanel(new BorderLayout());
-        JTextArea area = new JTextArea();
-        area.setEditable(false);
-        panel.add(new JScrollPane(area));
-
-        try {
-            Statement stmt = conn.createStatement();
-            ResultSet rs = stmt.executeQuery("SELECT * FROM blood_stock WHERE quantity < 500");
-
-            boolean hasLow = false;
-            while (rs.next()) {
-                hasLow = true;
-                area.append("\u26A0\uFE0F Low stock: " + rs.getString("blood_group") +
-                        " (" + rs.getInt("quantity") + " ml)\n");
-            }
-
-            if (!hasLow) area.setText("\u2705 All blood stock levels are sufficient.");
-        } catch (Exception e) {
-            area.setText("Error: " + e.getMessage());
-        }
-
-        return panel;
-    }
-
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> new BloodDonationGUI().setVisible(true));
     }
 }
+
+class AdminDashboard extends JFrame {
+    private static final long serialVersionUID = 5221225283713820311L;
+
+    public AdminDashboard() {
+        setTitle("Admin Dashboard");
+        setSize(600, 400);
+        setLocationRelativeTo(null);
+        setDefaultCloseOperation(EXIT_ON_CLOSE);
+        setLayout(new BorderLayout(10, 10));
+
+        JLabel welcomeLabel = new JLabel("Welcome, Admin!", SwingConstants.CENTER);
+        welcomeLabel.setFont(new Font("Arial", Font.BOLD, 30));
+        add(welcomeLabel, BorderLayout.NORTH);
+
+        JPanel buttonPanel = new JPanel(new GridLayout(3, 2, 20, 20));
+
+        JButton manageDonorsBtn = new JButton("Manage Donor Records");
+        JButton manageUsersBtn = new JButton("Manage User Profiles");
+        JButton viewRequestsBtn = new JButton("View Blood Requests");
+        JButton viewEventsBtn = new JButton("View Event Records");
+        JButton viewFeedbackBtn = new JButton("View Feedback");
+        JButton logoutBtn = new JButton("Logout");
+
+        buttonPanel.add(manageDonorsBtn);
+        buttonPanel.add(manageUsersBtn);
+        buttonPanel.add(viewRequestsBtn);
+        buttonPanel.add(viewEventsBtn);
+        buttonPanel.add(viewFeedbackBtn);
+        buttonPanel.add(logoutBtn);
+
+        add(buttonPanel, BorderLayout.CENTER);
+
+        manageDonorsBtn.addActionListener(e -> JOptionPane.showMessageDialog(this, "Manage Donor Records clicked"));
+        manageUsersBtn.addActionListener(e -> JOptionPane.showMessageDialog(this, "Manage User Profiles clicked"));
+        viewRequestsBtn.addActionListener(e -> JOptionPane.showMessageDialog(this, "View Blood Requests clicked"));
+        viewEventsBtn.addActionListener(e -> JOptionPane.showMessageDialog(this, "View Event Records clicked"));
+        viewFeedbackBtn.addActionListener(e -> JOptionPane.showMessageDialog(this, "View Feedback clicked"));
+
+        logoutBtn.addActionListener(e -> {
+            dispose();
+            new LoginFrame();
+        });
+
+        setVisible(true);
+    }
+}
+
+class UserDashboard extends JFrame {
+    private JTextField nameField, addressField, numberField, uidField;
+    private JButton registerEventBtn, updateEventBtn, feedbackBtn, logoutBtn;
+
+    public UserDashboard() {
+        setTitle("User Dashboard");
+        setSize(600, 500);
+        setLocationRelativeTo(null);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setLayout(new BorderLayout(10, 10));
+
+        // Title label
+        JLabel titleLabel = new JLabel("Welcome, User!", SwingConstants.CENTER);
+        titleLabel.setFont(new Font("Arial", Font.BOLD, 24));
+        add(titleLabel, BorderLayout.NORTH);
+
+        // User info panel
+        JPanel userInfoPanel = new JPanel(new GridLayout(4, 2, 10, 10));
+        userInfoPanel.setBorder(BorderFactory.createTitledBorder("User Information"));
+
+        userInfoPanel.add(new JLabel("Name:"));
+        nameField = new JTextField();
+        userInfoPanel.add(nameField);
+
+        userInfoPanel.add(new JLabel("Address:"));
+        addressField = new JTextField();
+        userInfoPanel.add(addressField);
+
+        userInfoPanel.add(new JLabel("Number:"));
+        numberField = new JTextField();
+        userInfoPanel.add(numberField);
+
+        userInfoPanel.add(new JLabel("UID:"));
+        uidField = new JTextField();
+        userInfoPanel.add(uidField);
+
+        add(userInfoPanel, BorderLayout.CENTER);
+
+        // Buttons panel for event interactions
+        JPanel buttonPanel = new JPanel(new GridLayout(1, 4, 10, 10));
+        registerEventBtn = new JButton("Register Event");
+        updateEventBtn = new JButton("Update Event");
+        feedbackBtn = new JButton("Provide Feedback");
+        logoutBtn = new JButton("Logout");
+
+        buttonPanel.add(registerEventBtn);
+        buttonPanel.add(updateEventBtn);
+        buttonPanel.add(feedbackBtn);
+        buttonPanel.add(logoutBtn);
+
+        add(buttonPanel, BorderLayout.SOUTH);
+
+        // Action listeners
+        registerEventBtn.addActionListener(e -> JOptionPane.showMessageDialog(this, "Register Event clicked"));
+        updateEventBtn.addActionListener(e -> JOptionPane.showMessageDialog(this, "Update Event clicked"));
+        feedbackBtn.addActionListener(e -> JOptionPane.showMessageDialog(this, "Provide Feedback clicked"));
+
+        logoutBtn.addActionListener(e -> {
+            dispose();
+            new LoginFrame();
+        });
+
+        setVisible(true);
+    }
+}
+
+
+class DonorDashboard extends JFrame {
+    private JTextField donorIdField, nameField, bloodGroupField, lastDonationDateField;
+    private JCheckBox availabilityCheckBox;
+    private JButton updateAvailabilityBtn, logoutBtn;
+
+    public DonorDashboard() {
+        setTitle("Donor Dashboard");
+        setSize(600, 400);
+        setLocationRelativeTo(null);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setLayout(new BorderLayout(10, 10));
+
+        // Title
+        JLabel titleLabel = new JLabel("Welcome, Donor!", SwingConstants.CENTER);
+        titleLabel.setFont(new Font("Arial", Font.BOLD, 24));
+        add(titleLabel, BorderLayout.NORTH);
+
+        // Donor info panel
+        JPanel donorInfoPanel = new JPanel(new GridLayout(4, 2, 10, 10));
+        donorInfoPanel.setBorder(BorderFactory.createTitledBorder("Donor Information"));
+
+        donorInfoPanel.add(new JLabel("Donor ID:"));
+        donorIdField = new JTextField();
+        donorInfoPanel.add(donorIdField);
+
+        donorInfoPanel.add(new JLabel("Name:"));
+        nameField = new JTextField();
+        donorInfoPanel.add(nameField);
+
+        donorInfoPanel.add(new JLabel("Blood Group:"));
+        bloodGroupField = new JTextField();
+        donorInfoPanel.add(bloodGroupField);
+
+        donorInfoPanel.add(new JLabel("Last Donation Date (YYYY-MM-DD):"));
+        lastDonationDateField = new JTextField();
+        donorInfoPanel.add(lastDonationDateField);
+
+        add(donorInfoPanel, BorderLayout.CENTER);
+
+        // Availability panel and buttons
+        JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
+
+        availabilityCheckBox = new JCheckBox("Available for Donation");
+        bottomPanel.add(availabilityCheckBox);
+
+        updateAvailabilityBtn = new JButton("Update Availability");
+        bottomPanel.add(updateAvailabilityBtn);
+
+        logoutBtn = new JButton("Logout");
+        bottomPanel.add(logoutBtn);
+
+        add(bottomPanel, BorderLayout.SOUTH);
+
+        // Action listeners
+        updateAvailabilityBtn.addActionListener(e -> {
+            boolean available = availabilityCheckBox.isSelected();
+            JOptionPane.showMessageDialog(this, "Availability updated to: " + (available ? "Available" : "Not Available"));
+            // Here you could add actual update logic (e.g., database)
+        });
+
+        logoutBtn.addActionListener(e -> {
+            dispose();
+            new LoginFrame();
+        });
+
+        setVisible(true);
+    }
+}
+
+
