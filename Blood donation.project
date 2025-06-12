@@ -1,0 +1,112 @@
+
+import javax.swing.*;
+import java.awt.*;
+
+public class BloodDonationApp extends JFrame {
+
+    public BloodDonationApp() {
+        setTitle("Blood Donation Tracking System");
+        setSize(800, 500);
+        setDefaultCloseOperation(EXIT_ON_CLOSE);
+        setLocationRelativeTo(null);
+
+        JTabbedPane tabs = new JTabbedPane();
+
+        tabs.add("Donor Management", donorPanel());
+        tabs.add("Blood Stock", stockPanel());
+        tabs.add("Donate Blood", donatePanel());
+        tabs.add("Issue Blood", issuePanel());
+        tabs.add("Reports & Status", reportPanel());
+
+        add(tabs);
+        setVisible(true);
+    }
+
+    private JPanel donorPanel() {
+        JPanel panel = new JPanel(new GridLayout(5, 2, 10, 10));
+        panel.setBorder(BorderFactory.createTitledBorder("Register New Donor"));
+
+        panel.add(new JLabel("Donor ID:"));
+        panel.add(new JTextField());
+
+        panel.add(new JLabel("Name:"));
+        panel.add(new JTextField());
+
+        panel.add(new JLabel("Blood Group:"));
+        panel.add(new JComboBox<>(new String[]{"A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"}));
+
+        panel.add(new JLabel("Registration Date:"));
+        panel.add(new JTextField());
+
+        panel.add(new JButton("Save"));
+        panel.add(new JButton("Clear"));
+
+        return panel;
+    }
+
+    private JPanel stockPanel() {
+        JPanel panel = new JPanel();
+        panel.setBorder(BorderFactory.createTitledBorder("Available Blood Stock"));
+
+        String[] columns = {"Blood Group", "Amount (ml)", "Donor ID"};
+        Object[][] data = {
+                {"A+", 500, "D101"},
+                {"B+", 700, "D102"},
+                {"O-", 400, "D103"}
+        };
+
+        JTable table = new JTable(data, columns);
+        panel.add(new JScrollPane(table));
+        return panel;
+    }
+
+    private JPanel donatePanel() {
+        JPanel panel = new JPanel(new GridLayout(3, 2, 10, 10));
+        panel.setBorder(BorderFactory.createTitledBorder("Blood Donation Entry"));
+
+        panel.add(new JLabel("Donor ID:"));
+        panel.add(new JTextField());
+
+        panel.add(new JLabel("Amount Donated (ml):"));
+        panel.add(new JTextField());
+
+        panel.add(new JButton("Submit Donation"));
+        panel.add(new JButton("Clear"));
+
+        return panel;
+    }
+
+    private JPanel issuePanel() {
+        JPanel panel = new JPanel(new GridLayout(4, 2, 10, 10));
+        panel.setBorder(BorderFactory.createTitledBorder("Issue Blood to Patient"));
+
+        panel.add(new JLabel("Patient Name:"));
+        panel.add(new JTextField());
+
+        panel.add(new JLabel("Required Blood Group:"));
+        panel.add(new JComboBox<>(new String[]{"A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"}));
+
+        panel.add(new JLabel("Amount Required (ml):"));
+        panel.add(new JTextField());
+
+        panel.add(new JButton("Issue"));
+        panel.add(new JButton("Clear"));
+
+        return panel;
+    }
+
+    private JPanel reportPanel() {
+        JPanel panel = new JPanel();
+        panel.setBorder(BorderFactory.createTitledBorder("Reports & Status"));
+
+        JTextArea area = new JTextArea(10, 50);
+        area.setText("Reports will be generated here...\n- Total Donations\n- Issued Blood\n- Current Stock");
+
+        panel.add(new JScrollPane(area));
+        return panel;
+    }
+
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(BloodDonationApp::new);
+    }
+}
