@@ -29,7 +29,7 @@ public class DeleteDonor {
             } else {
                 System.out.println("❌ Donor ID not found.");
             }
-
+/// for test only 
             conn.close();
         } catch (Exception e) {
             e.printStackTrace();
