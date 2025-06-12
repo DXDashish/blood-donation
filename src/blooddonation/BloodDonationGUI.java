@@ -3,18 +3,16 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 
-public class Main {
+public class BloodDonationGUI{
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> new LoginFrame());
     }
 }
-
 class LoginFrame extends JFrame {
     private JTextField usernameField;
     private JPasswordField passwordField;
     private JButton loginButton;
     private JComboBox<String> roleComboBox;
-
     public LoginFrame() {
         setTitle("Blood Donation System - Login");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
