@@ -16,7 +16,7 @@ public class DeleteDonor {
             System.out.println("❌ Deletion cancelled.");
             return;
         }
-
+//test by shlok
         try {
             Connection conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/blood_donation", "root", "");
             String query = "DELETE FROM donors WHERE id = ?";
